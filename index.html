@@ -321,18 +321,60 @@ select option{background:#1a1710;}
 <script>
 const SCHOOLS  = ['수리고','군포고','산본고','흥진고','용호고','군포중앙고'];
 const COLORS   = ['#1e4fd8','#e8a838','#2eac72','#e05c5c','#9b6fe8','#e87d3e'];
+const CHART_PALETTES = {
+  type: ['#7eb8f7','#f7c96e','#7dd4a8'],
+  diff: ['#c8e6ff','#91c8f6','#f7d98a','#f7b07a','#f79a9a','#c47a7a'],
+  link: ['#7eb8f7','#f7b07a','#7dd4a8','#f79a9a']
+};
 
-let allData = [];
+let allData      = [];
 let compareChart = null;
 let trendChart   = null;
-let selectedSub  = '전체'; // 세부과목
+let selectedSub  = '전체';
+let inputCharts  = {};
+let currentViewerTab = 'analysis';
+let currentViewerRow = null;
 
-// ── 탭 ──────────────────────────────────────────
+// ── 메인 탭 전환 ──────────────────────────────────
 function switchTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   if (btn) btn.classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ── 뷰어 탭 전환 ──────────────────────────────────
+function switchViewerTab(tab) {
+  currentViewerTab = tab;
+  ['analysis','exam'].forEach(t => {
+    const btn = document.getElementById('viewerTab-' + t);
+    if (!btn) return;
+    if (t === tab) {
+      btn.style.borderBottom = '2px solid var(--accent)';
+      btn.style.color = 'var(--accent)';
+      btn.style.fontWeight = '600';
+    } else {
+      btn.style.borderBottom = '2px solid transparent';
+      btn.style.color = 'var(--text3)';
+      btn.style.fontWeight = '500';
+    }
+  });
+  if (currentViewerRow) loadViewerUrl(currentViewerRow, tab);
+}
+
+function loadViewerUrl(row, tab) {
+  const preview = document.getElementById('pdfPreview');
+  if (!preview) return;
+  const urlKey = tab === 'analysis' ? '기출 분석지 원본 링크' : '시험지 원본 링크';
+  const url = row[urlKey];
+  if (!url) {
+    preview.innerHTML = `<div class="pdf-empty">${tab === 'analysis' ? '기출 분석지' : '시험지 원본'} 링크가 없어요<br><span style="font-size:11px;">노션 DB에 링크를 추가해주세요</span></div>`;
+    return;
+  }
+  let viewUrl = url;
+  const driveMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveMatch) viewUrl = `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+  preview.innerHTML = `<iframe src="${viewUrl}" title="${tab === 'analysis' ? '기출 분석지' : '시험지 원본'}" allow="autoplay" style="width:100%;height:100%;border:none;"></iframe>`;
 }
 
 // ── 필터 읽기 ────────────────────────────────────
@@ -353,7 +395,7 @@ function matchRow(d, f, schoolOverride) {
   const school = schoolOverride !== undefined ? schoolOverride : f.school;
   if (f.grade      !== '전체' && d['학년']      !== f.grade)      return false;
   if (f.semester   !== '전체' && d['학기']      !== f.semester)   return false;
-  if (f.exam       !== '전체' && d['중간/기말']  !== f.exam)       return false;
+  if (f.exam       !== '전체' && d['중간/기말'] !== f.exam)        return false;
   if (f.subject    !== '전체' && d['과목']      !== f.subject)    return false;
   if (f.subSubject !== '전체' && d['세부과목']  !== f.subSubject) return false;
   if (school       !== '전체' && d['학교']      !== school)       return false;
@@ -377,9 +419,7 @@ function buildYearChecks() {
 function updateSubSubjects(f) {
   const wrap = document.getElementById('subSubjectWrap');
   const row  = document.getElementById('subSubjectRow');
-
   if (f.subject === '전체') { wrap.style.display = 'none'; selectedSub = '전체'; return; }
-
   const subs = [...new Set(
     allData
       .filter(d =>
@@ -390,16 +430,11 @@ function updateSubSubjects(f) {
       )
       .map(d => d['세부과목'])
   )].sort();
-
   if (!subs.length) { wrap.style.display = 'none'; selectedSub = '전체'; return; }
-
   wrap.style.display = 'block';
   row.innerHTML =
     `<div class="sub-pill${selectedSub==='전체'?' active':''}" onclick="pickSub('전체',this)">전체</div>` +
-    subs.map(s =>
-      `<div class="sub-pill${selectedSub===s?' active':''}" onclick="pickSub('${s}',this)">${s}</div>`
-    ).join('');
-
+    subs.map(s => `<div class="sub-pill${selectedSub===s?' active':''}" onclick="pickSub('${s}',this)">${s}</div>`).join('');
   if (selectedSub !== '전체' && !subs.includes(selectedSub)) selectedSub = '전체';
 }
 
@@ -412,12 +447,11 @@ function pickSub(val, el) {
 
 // ── 조건 텍스트 ──────────────────────────────────
 function buildConditionText(f) {
-  const subj = f.subject !== '전체' ? f.subject : '전체';
+  const subj  = f.subject !== '전체' ? f.subject : '전체';
   const badge = `<span class="s-badge s-${subj}">${subj === '전체' ? '전과목' : subj}${f.subSubject !== '전체' ? ' · ' + f.subSubject : ''}</span>`;
   const cond  = [f.grade, f.semester, f.exam].filter(v => v !== '전체').join(' · ');
   const school = f.school !== '전체' ? f.school : '전체 학교';
-  document.getElementById('conditionText').innerHTML =
-    [cond, badge, school].filter(Boolean).join(' · ');
+  document.getElementById('conditionText').innerHTML = [cond, badge, school].filter(Boolean).join(' · ');
 }
 
 // ── 메인 렌더 ────────────────────────────────────
@@ -438,17 +472,13 @@ function renderCompare(f) {
   const latestYear = years[years.length - 1];
   const yd    = base.filter(d => d['년도'] === latestYear);
   const schools = f.school === '전체' ? SCHOOLS : [f.school];
-
   const c1 = schools.map(s => { const r = yd.find(d => d['학교'] === s); return r ? r['1등급컷'] : null; });
   const c2 = schools.map(s => { const r = yd.find(d => d['학교'] === s); return r ? r['2등급컷'] : null; });
-
   const condStr = [f.grade, f.semester, f.exam, f.subject !== '전체' ? f.subject : '', f.subSubject !== '전체' ? f.subSubject : '']
     .filter(v => v && v !== '전체').join(' · ');
   document.getElementById('compareSubtitle').textContent = `${latestYear || '—'}년 기준 · ${condStr}`;
-
   const v1 = c1.filter(v => v !== null && v > 0);
   const v2 = c2.filter(v => v !== null && v > 0);
-
   if (v1.length) {
     const max = Math.max(...v1), maxIdx = c1.indexOf(max);
     const min = Math.min(...v1), minIdx = c1.findIndex(v => v === min && v > 0);
@@ -462,7 +492,6 @@ function renderCompare(f) {
     ['m-max1','m-min1','m-avg1','m-avg2'].forEach(id => document.getElementById(id).textContent = '—');
     ['m-max1-school','m-min1-school'].forEach(id => document.getElementById(id).textContent = '—');
   }
-
   if (compareChart) compareChart.destroy();
   compareChart = new Chart(document.getElementById('compareChart'), {
     type: 'bar',
@@ -475,17 +504,10 @@ function renderCompare(f) {
     },
     options: {
       responsive:true, maintainAspectRatio:false,
-      plugins: {
-        legend: { display:false },
-        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y+'점' : '미입력') } }
-      },
+      plugins: { legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.dataset.label+': '+(ctx.parsed.y!=null?ctx.parsed.y+'점':'미입력'))}} },
       scales: {
-        y: {
-          min:0, max:100,
-          ticks: { stepSize:10, callback: v => v+'점', font:{size:11}, color:'#a09f9b' },
-          grid: { color:'rgba(0,0,0,0.05)' }
-        },
-        x: { ticks: { font:{size:12}, color:'#6b6a66' }, grid:{ display:false } }
+        y: { min:0, max:100, ticks:{stepSize:10, callback:v=>v+'점', font:{size:11}, color:'#a09f9b'}, grid:{color:'rgba(0,0,0,0.05)'} },
+        x: { ticks:{font:{size:12}, color:'#6b6a66'}, grid:{display:false} }
       }
     }
   });
@@ -502,41 +524,98 @@ function renderTrend(f) {
       const row = allData.find(d => d['학교']===school && d['년도']===y && matchRow(d,f,school));
       return row ? row['1등급컷'] : null;
     });
-    return { label:school, data, borderColor:COLORS[ci], backgroundColor:COLORS[ci]+'22',
-      tension:0.35, pointRadius:5, pointHoverRadius:7, borderWidth:2.5, fill:false, spanGaps:true };
+    return { label:school, data, borderColor:COLORS[ci], backgroundColor:COLORS[ci]+'22', tension:0.35, pointRadius:5, pointHoverRadius:7, borderWidth:2.5, fill:false, spanGaps:true };
   });
-
   document.getElementById('trendLegend').innerHTML = schools.map(s => {
     const color = COLORS[SCHOOLS.indexOf(s)];
     return `<div class="legend-item"><div class="legend-dot" style="background:${color}"></div>${s}</div>`;
   }).join('');
-
   const subStr = f.subject !== '전체' ? ` · ${f.subject}${f.subSubject !== '전체' ? ' '+f.subSubject : ''}` : '';
   document.getElementById('trendSubtitle').textContent = checkedYears.join(' / ') + '년 · 1등급컷 추이' + subStr;
-
   if (trendChart) trendChart.destroy();
   trendChart = new Chart(document.getElementById('trendChart'), {
     type: 'line',
     data: { labels: checkedYears.map(y => y+'년'), datasets },
     options: {
       responsive:true, maintainAspectRatio:false,
-      plugins: {
-        legend: { display:false },
-        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y+'점' : '미입력') } }
-      },
+      plugins: { legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.dataset.label+': '+(ctx.parsed.y!=null?ctx.parsed.y+'점':'미입력'))}} },
       scales: {
-        y: {
-          min:0, max:100,
-          ticks: { stepSize:10, callback: v => v+'점', font:{size:11}, color:'#a09f9b' },
-          grid: { color:'rgba(0,0,0,0.05)' }
-        },
-        x: { ticks: { font:{size:12}, color:'#6b6a66' }, grid:{ display:false } }
+        y: { min:0, max:100, ticks:{stepSize:10, callback:v=>v+'점', font:{size:11}, color:'#a09f9b'}, grid:{color:'rgba(0,0,0,0.05)'} },
+        x: { ticks:{font:{size:12}, color:'#6b6a66'}, grid:{display:false} }
       }
     }
   });
 }
 
-// ── 이벤트 ──────────────────────────────────────
+// ── 문서 뷰어 자동 로드 ──────────────────────────
+function autoLoadViewer(f) {
+  if (!allData.length) return;
+  const row = allData.find(d =>
+    (f.school   === '전체' || d['학교']      === f.school)   &&
+    (f.grade    === '전체' || d['학년']      === f.grade)    &&
+    (f.semester === '전체' || d['학기']      === f.semester) &&
+    (f.exam     === '전체' || d['중간/기말'] === f.exam)      &&
+    (f.subject  === '전체' || d['과목']      === f.subject)
+  );
+  if (!row) return;
+  currentViewerRow = row;
+  loadViewerUrl(row, currentViewerTab);
+  // 문항 입력폼 자동 채우기
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || 0; };
+  setVal('inp-obj', row['객관식']);      setVal('inp-sul', row['서술형']);    setVal('inp-dan', row['단답형']);
+  setVal('inp-d1',  row['난이도_하']);   setVal('inp-d2',  row['난이도_중하']); setVal('inp-d3', row['난이도_중']);
+  setVal('inp-d4',  row['난이도_중상']); setVal('inp-d5',  row['난이도_상']);  setVal('inp-d6', row['난이도_최상']);
+  setVal('inp-l1',  row['연계_교과서']); setVal('inp-l2',  row['연계_학교프린트']);
+  setVal('inp-l3',  row['연계_부교재']); setVal('inp-l4',  row['연계_비연계']);
+  updateCharts();
+}
+
+// ── 문항 분석 차트 ────────────────────────────────
+function getVal(id) { return parseInt(document.getElementById(id)?.value) || 0; }
+
+function resetInputs() {
+  ['inp-obj','inp-sul','inp-dan','inp-d1','inp-d2','inp-d3','inp-d4','inp-d5','inp-d6','inp-l1','inp-l2','inp-l3','inp-l4']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = 0; });
+  updateCharts();
+}
+
+function updateCharts() {
+  const typeData = {};
+  const obj=getVal('inp-obj'), sul=getVal('inp-sul'), dan=getVal('inp-dan');
+  if (obj>0) typeData['객관식']=obj;
+  if (sul>0) typeData['서술형']=sul;
+  if (dan>0) typeData['단답형']=dan;
+  const diffData = {};
+  ['하','중하','중','중상','상','최상'].forEach((n,i) => { const v=getVal('inp-d'+(i+1)); if(v>0) diffData[n]=v; });
+  const linkData = {};
+  ['교과서','학교 프린트','학교 부교재','비연계'].forEach((n,i) => { const v=getVal('inp-l'+(i+1)); if(v>0) linkData[n]=v; });
+  if (Object.keys(typeData).length>0) makePieChart('chart-type','legend-type',typeData,CHART_PALETTES.type);
+  if (Object.keys(diffData).length>0) makePieChart('chart-diff','legend-diff',diffData,CHART_PALETTES.diff);
+  if (Object.keys(linkData).length>0) makePieChart('chart-link','legend-link',linkData,CHART_PALETTES.link);
+}
+
+function makePieChart(canvasId, legendId, data, palette) {
+  if (inputCharts[canvasId]) inputCharts[canvasId].destroy();
+  const labels=Object.keys(data), values=Object.values(data);
+  const total=values.reduce((a,b)=>a+b,0);
+  const colors=palette.slice(0,labels.length);
+  const canvas=document.getElementById(canvasId);
+  if (!canvas) return;
+  inputCharts[canvasId] = new Chart(canvas, {
+    type: 'pie',
+    data: { labels, datasets: [{data:values, backgroundColor:colors, borderWidth:2, borderColor:'#fff', hoverOffset:4}] },
+    options: { responsive:true, maintainAspectRatio:false, plugins: { legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed}문항 (${Math.round(ctx.parsed/total*100)}%)`}} } }
+  });
+  const legendEl = document.getElementById(legendId);
+  if (legendEl) legendEl.innerHTML = labels.map((l,i) =>
+    `<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:3px;">
+      <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:2px;background:${colors[i]};flex-shrink:0;"></div>${l}</div>
+      <span style="color:var(--text3);">${Math.round(values[i]/total*100)}%</span>
+    </div>`
+  ).join('');
+}
+
+// ── 이벤트 바인딩 ────────────────────────────────
 ['sel-grade','sel-semester','sel-exam'].forEach(id =>
   document.getElementById(id).addEventListener('change', () => { selectedSub='전체'; render(); })
 );
@@ -556,125 +635,7 @@ document.getElementById('schoolList').addEventListener('click', e => {
   render();
 });
 
-
-
-// ── 뷰어 탭 전환 ──────────────────────────────────
-let currentViewerTab = 'analysis'; // 현재 뷰어 탭
-let currentViewerRow = null;       // 현재 로드된 row
-
-function switchViewerTab(tab) {
-  currentViewerTab = tab;
-  // 탭 버튼 스타일
-  ['analysis','exam'].forEach(t => {
-    const btn = document.getElementById('viewerTab-' + t);
-    if (!btn) return;
-    if (t === tab) {
-      btn.className = ''; btn.style.cssText = 'padding:8px 18px;font-family:Pretendard,sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--accent);margin-bottom:-1px;';
-    } else {
-      btn.className = ''; btn.style.cssText = 'padding:8px 18px;font-family:Pretendard,sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);margin-bottom:-1px;';
-    }
-  });
-  // 뷰어 갱신
-  if (currentViewerRow) loadViewerUrl(currentViewerRow, tab);
-}
-
-function loadViewerUrl(row, tab) {
-  const preview = document.getElementById('pdfPreview');
-  if (!preview) return;
-  const urlKey = tab === 'analysis' ? '기출 분석지 원본 링크' : '시험지 원본 링크';
-  const url = row[urlKey];
-  if (!url) {
-    preview.innerHTML = `<div class="pdf-empty">${tab === 'analysis' ? '기출 분석지' : '시험지 원본'} 링크가 없어요<br><span style="font-size:11px;">노션 DB에 링크를 추가해주세요</span></div>`;
-    return;
-  }
-  let viewUrl = url;
-  const driveMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if (driveMatch) viewUrl = `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
-  preview.innerHTML = `<iframe src="${viewUrl}" title="${tab === 'analysis' ? '기출 분석지' : '시험지 원본'}" allow="autoplay" style="width:100%;height:100%;border:none;"></iframe>`;
-}
-
-// ── 문항 분석 JS ──────────────────────────────────
-const CHART_PALETTES = {
-  type: ['#7eb8f7','#f7c96e','#7dd4a8'],
-  diff: ['#c8e6ff','#91c8f6','#f7d98a','#f7b07a','#f79a9a','#c47a7a'],
-  link: ['#7eb8f7','#f7b07a','#7dd4a8','#f79a9a']
-};
-let inputCharts = {};
-
-function getVal(id){ return parseInt(document.getElementById(id)?.value)||0; }
-
-function resetInputs(){
-  ['inp-obj','inp-sul','inp-dan','inp-d1','inp-d2','inp-d3','inp-d4','inp-d5','inp-d6','inp-l1','inp-l2','inp-l3','inp-l4']
-    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=0; });
-  updateCharts();
-}
-
-function updateCharts(){
-  const typeData={};
-  const obj=getVal('inp-obj'),sul=getVal('inp-sul'),dan=getVal('inp-dan');
-  if(obj>0) typeData['객관식']=obj;
-  if(sul>0) typeData['서술형']=sul;
-  if(dan>0) typeData['단답형']=dan;
-  const diffData={};
-  const dNames=['하','중하','중','중상','상','최상'];
-  ['inp-d1','inp-d2','inp-d3','inp-d4','inp-d5','inp-d6'].forEach((id,i)=>{
-    const v=getVal(id); if(v>0) diffData[dNames[i]]=v;
-  });
-  const linkData={};
-  const lNames=['교과서','학교 프린트','학교 부교재','비연계'];
-  ['inp-l1','inp-l2','inp-l3','inp-l4'].forEach((id,i)=>{
-    const v=getVal(id); if(v>0) linkData[lNames[i]]=v;
-  });
-  if(Object.keys(typeData).length>0) makePieChart('chart-type','legend-type',typeData,CHART_PALETTES.type);
-  if(Object.keys(diffData).length>0) makePieChart('chart-diff','legend-diff',diffData,CHART_PALETTES.diff);
-  if(Object.keys(linkData).length>0) makePieChart('chart-link','legend-link',linkData,CHART_PALETTES.link);
-}
-
-function makePieChart(canvasId,legendId,data,palette){
-  if(inputCharts[canvasId]) inputCharts[canvasId].destroy();
-  const labels=Object.keys(data),values=Object.values(data);
-  const total=values.reduce((a,b)=>a+b,0);
-  const colors=palette.slice(0,labels.length);
-  const canvas=document.getElementById(canvasId);
-  if(!canvas) return;
-  inputCharts[canvasId]=new Chart(canvas,{
-    type:'pie',
-    data:{labels,datasets:[{data:values,backgroundColor:colors,borderWidth:2,borderColor:'#fff',hoverOffset:4}]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed}문항 (${Math.round(ctx.parsed/total*100)}%)`}}}}
-  });
-  const legendEl=document.getElementById(legendId);
-  if(legendEl) legendEl.innerHTML=labels.map((l,i)=>
-    `<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text2);">
-      <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:2px;background:${colors[i]};flex-shrink:0;"></div>${l}</div>
-      <span style="color:var(--text3);">${Math.round(values[i]/total*100)}%</span>
-    </div>`
-  ).join('');
-}
-
-function autoLoadViewer(f){
-  if(!allData.length) return;
-  const row=allData.find(d=>
-    (f.school==='전체'||d['학교']===f.school)&&
-    (f.grade==='전체'||d['학년']===f.grade)&&
-    (f.semester==='전체'||d['학기']===f.semester)&&
-    (f.exam==='전체'||d['중간/기말']===f.exam)&&
-    (f.subject==='전체'||d['과목']===f.subject)
-  );
-  if(!row) return;
-  currentViewerRow = row;
-  loadViewerUrl(row, currentViewerTab);
-  {
-  const setVal=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||0; };
-  setVal('inp-obj',row['객관식']); setVal('inp-sul',row['서술형']); setVal('inp-dan',row['단답형']);
-  setVal('inp-d1',row['난이도_하']); setVal('inp-d2',row['난이도_중하']); setVal('inp-d3',row['난이도_중']);
-  setVal('inp-d4',row['난이도_중상']); setVal('inp-d5',row['난이도_상']); setVal('inp-d6',row['난이도_최상']);
-  setVal('inp-l1',row['연계_교과서']); setVal('inp-l2',row['연계_학교프린트']);
-  setVal('inp-l3',row['연계_부교재']); setVal('inp-l4',row['연계_비연계']);
-  updateCharts();
-}
-
-// ── 노션 로드 ────────────────────────────────────
+// ── 노션 데이터 로드 ────────────────────────────
 function loadFromNotion() {
   fetch('/api/notion')
     .then(r => r.json())
