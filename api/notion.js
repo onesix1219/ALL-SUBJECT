@@ -36,6 +36,7 @@ export default async function handler(req, res) {
         '2등급컷': props['2등급컷']?.number ?? null,
         '분석지 이미지 링크': props['분석지 이미지 링크']?.url || '',
         '기출 분석지 원본 링크': props['기출 분석지 원본 링크']?.url || '',
+        '시험지 원본 링크': props['시험지 원본 링크']?.url || '',
       };
     });
 
