@@ -120,6 +120,13 @@ select option{background:#1a1710;}
 .viewer-tab-active{border-bottom:2px solid var(--accent) !important;color:var(--accent) !important;font-weight:600 !important;}
 .viewer-tab-inactive{border-bottom:2px solid transparent !important;color:var(--text3) !important;font-weight:500 !important;}
 
+/* ── 탭 ── */
+.tabs{display:flex;gap:4px;margin-bottom:1.75rem;background:var(--surface2);border-radius:var(--radius-sm);padding:4px;}
+.tab{flex:1;padding:9px 12px;border-radius:6px;border:none;background:transparent;font-family:'Pretendard',sans-serif;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all 0.15s;text-align:center;}
+.tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.08);font-weight:600;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
 </style>
 </head>
 <body>
