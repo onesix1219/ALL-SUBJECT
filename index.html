@@ -205,46 +205,57 @@ select option{background:#1a1710;}
     <p id="conditionText">고2 · 1학기 · 중간고사 · 전과목 · 전체 학교</p>
   </div>
 
-  <!-- 세부과목 필터 -->
-  <div id="subSubjectWrap" style="display:none;">
-    <div class="section-title">세부 과목</div>
-    <div class="sub-row" id="subSubjectRow"></div>
+  <!-- 메인 탭 버튼 -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('grade',this)">📊 등급컷 분석</button>
+    <button class="tab" onclick="switchTab('item',this)">🔍 문항 분석</button>
   </div>
 
-  <!-- METRICS -->
-  <div class="metrics">
-    <div class="metric-card"><div class="m-label">최고 1등급컷</div><div class="m-value blue" id="m-max1">—</div><div class="m-sub" id="m-max1-school">—</div></div>
-    <div class="metric-card"><div class="m-label">최저 1등급컷</div><div class="m-value" id="m-min1">—</div><div class="m-sub" id="m-min1-school">—</div></div>
-    <div class="metric-card"><div class="m-label">평균 1등급컷</div><div class="m-value blue" id="m-avg1">—</div><div class="m-sub">선택 조건 기준</div></div>
-    <div class="metric-card"><div class="m-label">평균 2등급컷</div><div class="m-value amber" id="m-avg2">—</div><div class="m-sub">선택 조건 기준</div></div>
-  </div>
+  <!-- ── TAB 1: 등급컷 분석 ── -->
+  <div class="tab-panel active" id="panel-grade">
 
-  <!-- 학교별 비교 차트 -->
-  <div class="section-title">학교별 1·2등급컷 비교</div>
-  <div class="chart-card">
-    <div class="chart-card-title">학교별 등급컷 비교</div>
-    <div class="chart-card-sub" id="compareSubtitle">—</div>
-    <div class="legend">
-      <div class="legend-item"><div class="legend-dot" style="background:#1e4fd8"></div>1등급컷</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#e8a838"></div>2등급컷</div>
+    <!-- 세부과목 필터 -->
+    <div id="subSubjectWrap" style="display:none;margin-bottom:1.5rem;">
+      <div class="section-title">세부 과목</div>
+      <div class="sub-row" id="subSubjectRow"></div>
     </div>
-    <div class="chart-wrap h280"><canvas id="compareChart"></canvas></div>
-  </div>
 
-  <!-- 추이 차트 -->
-  <div class="section-title">연도별 1등급컷 추이</div>
-  <div class="chart-card">
-    <div class="chart-card-title">연도별 1등급컷 추이</div>
-    <div class="chart-card-sub" id="trendSubtitle">왼쪽 사이드바에서 비교할 연도를 체크하세요</div>
-    <div class="legend" id="trendLegend"></div>
-    <div class="chart-wrap h280"><canvas id="trendChart"></canvas></div>
-  </div>
+    <!-- 지표 카드 -->
+    <div class="metrics">
+      <div class="metric-card"><div class="m-label">최고 1등급컷</div><div class="m-value blue" id="m-max1">—</div><div class="m-sub" id="m-max1-school">—</div></div>
+      <div class="metric-card"><div class="m-label">최저 1등급컷</div><div class="m-value" id="m-min1">—</div><div class="m-sub" id="m-min1-school">—</div></div>
+      <div class="metric-card"><div class="m-label">평균 1등급컷</div><div class="m-value blue" id="m-avg1">—</div><div class="m-sub">선택 조건 기준</div></div>
+      <div class="metric-card"><div class="m-label">평균 2등급컷</div><div class="m-value amber" id="m-avg2">—</div><div class="m-sub">선택 조건 기준</div></div>
+    </div>
 
-  <!-- TAB 2: 문항 분석 -->
+    <!-- 비교 차트 -->
+    <div class="section-title">학교별 1·2등급컷 비교</div>
+    <div class="chart-card">
+      <div class="chart-card-title">학교별 등급컷 비교</div>
+      <div class="chart-card-sub" id="compareSubtitle">—</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#1e4fd8"></div>1등급컷</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#e8a838"></div>2등급컷</div>
+      </div>
+      <div class="chart-wrap h280"><canvas id="compareChart"></canvas></div>
+    </div>
+
+    <!-- 추이 차트 -->
+    <div class="section-title">연도별 1등급컷 추이</div>
+    <div class="chart-card">
+      <div class="chart-card-title">연도별 1등급컷 추이</div>
+      <div class="chart-card-sub" id="trendSubtitle">왼쪽 사이드바에서 비교할 연도를 체크하세요</div>
+      <div class="legend" id="trendLegend"></div>
+      <div class="chart-wrap h280"><canvas id="trendChart"></canvas></div>
+    </div>
+  </div><!-- /panel-grade -->
+
+  <!-- ── TAB 2: 문항 분석 ── -->
   <div class="tab-panel" id="panel-item">
+
+    <!-- 문서 뷰어 -->
     <div class="section-title">문서 뷰어</div>
     <div class="chart-card" style="margin-bottom:1.5rem;">
-      <!-- 뷰어 탭 -->
       <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1rem;">
         <button id="viewerTab-analysis" onclick="switchViewerTab('analysis')"
           style="padding:8px 18px;font-family:Pretendard,sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--accent);margin-bottom:-1px;">
@@ -255,11 +266,12 @@ select option{background:#1a1710;}
           📝 시험지 원본
         </button>
       </div>
-      <!-- 뷰어 본체 -->
       <div class="pdf-preview" id="pdfPreview" style="height:580px;">
-        <div class="pdf-empty">조건을 선택하면 자동으로 불러와요<br><span style="font-size:11px;">Google Drive 원본 링크 연결 필요</span></div>
+        <div class="pdf-empty">왼쪽에서 조건을 선택하면 자동으로 불러와요<br><span style="font-size:11px;">학교를 하나만 선택해야 문서가 표시됩니다</span></div>
       </div>
     </div>
+
+    <!-- 문항 데이터 입력 -->
     <div class="section-title">문항 데이터 입력</div>
     <div class="chart-card" style="margin-bottom:1.5rem;">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;">
@@ -296,6 +308,8 @@ select option{background:#1a1710;}
         <button onclick="resetInputs()" style="padding:8px 18px;border-radius:var(--radius-sm);font-family:Pretendard,sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);">초기화</button>
       </div>
     </div>
+
+    <!-- 문항 구성 차트 -->
     <div class="section-title">문항 구성 분석</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.5rem;">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;">
@@ -314,9 +328,12 @@ select option{background:#1a1710;}
         <div id="legend-link" style="display:flex;flex-direction:column;gap:4px;margin-top:10px;"></div>
       </div>
     </div>
-  </div>
+  </div><!-- /panel-item -->
+
 </main>
 </div>
+
+
 
 <script>
 const SCHOOLS  = ['수리고','군포고','산본고','흥진고','용호고','군포중앙고'];
@@ -341,6 +358,10 @@ function switchTab(name, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   if (btn) btn.classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
+  // 문항분석 탭 진입 시 뷰어 즉시 로드
+  if (name === 'item' && currentViewerRow) {
+    loadViewerUrl(currentViewerRow, currentViewerTab);
+  }
 }
 
 // ── 뷰어 탭 전환 ──────────────────────────────────
@@ -367,14 +388,21 @@ function loadViewerUrl(row, tab) {
   if (!preview) return;
   const urlKey = tab === 'analysis' ? '기출 분석지 원본 링크' : '시험지 원본 링크';
   const url = row[urlKey];
+  const label = tab === 'analysis' ? '기출 분석지' : '시험지 원본';
   if (!url) {
-    preview.innerHTML = `<div class="pdf-empty">${tab === 'analysis' ? '기출 분석지' : '시험지 원본'} 링크가 없어요<br><span style="font-size:11px;">노션 DB에 링크를 추가해주세요</span></div>`;
+    preview.innerHTML = `<div class="pdf-empty">${label} 링크가 없어요<br><span style="font-size:11px;">노션 DB에 링크를 추가해주세요</span></div>`;
     return;
   }
   let viewUrl = url;
-  const driveMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if (driveMatch) viewUrl = `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
-  preview.innerHTML = `<iframe src="${viewUrl}" title="${tab === 'analysis' ? '기출 분석지' : '시험지 원본'}" allow="autoplay" style="width:100%;height:100%;border:none;"></iframe>`;
+  // Google Drive 다양한 형식 처리
+  const driveFileMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  const driveOpenMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (driveFileMatch) {
+    viewUrl = `https://drive.google.com/file/d/${driveFileMatch[1]}/preview`;
+  } else if (driveOpenMatch) {
+    viewUrl = `https://drive.google.com/file/d/${driveOpenMatch[1]}/preview`;
+  }
+  preview.innerHTML = `<iframe src="${viewUrl}" title="${label}" allow="autoplay" referrerpolicy="no-referrer-when-downgrade" style="width:100%;height:100%;border:none;"></iframe>`;
 }
 
 // ── 필터 읽기 ────────────────────────────────────
@@ -550,14 +578,27 @@ function renderTrend(f) {
 // ── 문서 뷰어 자동 로드 ──────────────────────────
 function autoLoadViewer(f) {
   if (!allData.length) return;
+  // 학교가 전체면 뷰어에 안내만 표시
+  if (f.school === '전체') {
+    currentViewerRow = null;
+    const preview = document.getElementById('pdfPreview');
+    if (preview) preview.innerHTML = '<div class="pdf-empty">왼쪽에서 학교를 하나 선택하면<br>문서를 불러와요</div>';
+    return;
+  }
   const row = allData.find(d =>
-    (f.school   === '전체' || d['학교']      === f.school)   &&
+    d['학교']      === f.school    &&
     (f.grade    === '전체' || d['학년']      === f.grade)    &&
     (f.semester === '전체' || d['학기']      === f.semester) &&
     (f.exam     === '전체' || d['중간/기말'] === f.exam)      &&
-    (f.subject  === '전체' || d['과목']      === f.subject)
+    (f.subject  === '전체' || d['과목']      === f.subject)  &&
+    (f.subSubject === '전체' || d['세부과목'] === f.subSubject)
   );
-  if (!row) return;
+  if (!row) {
+    currentViewerRow = null;
+    const preview = document.getElementById('pdfPreview');
+    if (preview) preview.innerHTML = '<div class="pdf-empty">선택한 조건의 데이터가 없어요</div>';
+    return;
+  }
   currentViewerRow = row;
   loadViewerUrl(row, currentViewerTab);
   // 문항 입력폼 자동 채우기
