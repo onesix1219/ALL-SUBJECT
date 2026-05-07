@@ -28,7 +28,7 @@ export default async function handler(req, res) {
         // 기본 정보
         학교: props['학교']?.title?.[0]?.plain_text || '',
         과목: props['과목']?.select?.name || '',
-        세부과목: props['세부과목']?.select?.name || '',
+        세부과목: props['세부 과목']?.select?.name || '',
         년도: props['년도']?.number || 0,
         학년: props['학년']?.select?.name || '',
         학기: props['학기']?.select?.name || '',
